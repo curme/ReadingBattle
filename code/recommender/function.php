@@ -1,9 +1,9 @@
 <?php
 
 
-include 'Util.php';
-include 'Data.php';
-include 'Rule.php';
+include 'util.php';
+include 'data.php';
+include 'rule.php';
 
 function updateBookToBookRules(){
 
@@ -45,7 +45,13 @@ function updateUserRecomBooks($userid){
 
 	// get user reading history
 	$data_manager = new DataManager();
-	$user_read_book_records = $data_manager->getReadBookRecords($userid);
+	$user_read_book_records = Array();
+	// if he is rec subject user, read from subject records table
+	if ($data_manager->checkInRecUsers($userid))
+		 $user_read_book_records = $data_manager->getRecReadRecords($userid);
+	else $user_read_book_records = $data_manager->getReadBookRecords($userid);
+
+	// preprocess records
 	if ($user_read_book_records == null) return;
 	$user_read_book_basket = array_unique(basketize($user_read_book_records)[$userid]);
 
@@ -70,6 +76,43 @@ function getUserRecomBooks($userid){
 	$user_recom_books = $data_manager->getUserRecomBooks($userid);
 	
 	return $user_recom_books;
+
+}
+
+function storeRecReadRecord($userid, $bookid, $recom = false){
+
+	// get read time
+	$time = date_timestamp_get(date_create());
+	$data_manager = new DataManager();
+
+	// check if the user is a rec subject user
+	$if_subject = $data_manager->checkInRecUsers($userid);
+	if (!$if_subject) return null;
+
+	// store the read record into database
+	$data_manager->storeRecReadRecord($userid, $bookid, $time, $recom);
+
+}
+
+function storeRecUser($userid){
+
+	// check in rec users list
+	$data_manager = new DataManager();
+	$if_subject = $data_manager->checkInRecUsers($userid);
+	if ($if_subject) return null;
+
+	// store into the database
+	$data_manager->storeRecUser($userid);
+
+}
+
+function checkInRecReadRecords($userid, $bookid){
+
+	// check in rec users list
+	$data_manager = new DataManager();
+	$if_read = $data_manager->checkInRecReadRecords($userid, $bookid);
+
+	return $if_read;
 }
 
 ?>

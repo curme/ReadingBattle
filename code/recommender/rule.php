@@ -1,8 +1,8 @@
 <?php
 
 // include
-include 'FPGrowth.php';
-include 'Apriori.php';
+include 'fpgrowth.php';
+include 'apriori.php';
 
 class RuleManager {
 

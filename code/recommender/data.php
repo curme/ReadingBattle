@@ -3,10 +3,10 @@
 class DataManager {
 
 	private $conn;
-	private $servername = "localhost";
-	private $username = "root";
-	private $password = "";
-	private $dbname = "equiz";
+	private $servername = MOODLE_DB_HOST;
+	private $username = MOODLE_DB_USER;
+	private $password = MOODLE_DB_PASSWORD;
+	private $dbname = MOODLE_DB_DATABASE;
 
 	public function __construct(){
 		$this->conn = $this->getConnection();
@@ -61,6 +61,26 @@ class DataManager {
 		$this->conn->query($sql);
 	}
 
+	// create table to store the reading records of subjects
+	public function createRecReadRecordsTable(){
+		$sql = "CREATE TABLE `rec_read_records` (
+				`id` bigint(10) NOT NULL AUTO_INCREMENT,
+				`userid` varchar(255) NOT NULL DEFAULT '',
+				`bookid` varchar(255) NOT NULL DEFAULT '',
+				`time`	bigint(10) NOT NULL DEFAULT '0',
+				`recom` boolean NOT NULL DEFAULT false,
+				PRIMARY KEY (`id`));";
+		$this->conn->query($sql);
+	}
+
+	public function createRecUsersTable(){
+		$sql = "CREATE TABLE `rec_users` (
+				`id` bigint(10) NOT NULL AUTO_INCREMENT,
+				`userid` varchar(255) NOT NULL DEFAULT '',
+				PRIMARY kEY (`id`));";
+		$this->conn->query($sql);
+	}
+
 	// update book to book rules in database
 	public function storeBookToBookRules($rules){
 		// empty previous rules
@@ -105,6 +125,19 @@ class DataManager {
 		unset($recom_book);
 	}
 
+	public function storeRecReadRecord($userid, $bookid, $time, $recom){
+		$sql = "INSERT INTO rec_read_records (userid, bookid, time, recom)
+				VALUES (%s, %s, %s, %b);";
+		$sql = vsprintf($sql, Array($userid, $bookid, $time, $recom));
+		$this->conn->query($sql);
+	}
+
+	public function storeRecUser($userid){
+		$sql = "INSERT INTO rec_users (userid) VALUES (%s);";
+		$sql = vsprintf($sql, $userid);
+		$this->conn->query($sql);
+	}
+
 	public function getUseridList(){
 		$sql = "SELECT userid FROM mdl_user_info_data;";
 		$result = $this->conn->query($sql);
@@ -125,6 +158,24 @@ class DataManager {
 				ORDER BY userid;";
 		if ($userid == null) $sql = vsprintf($sql, '');
 		else $sql = vsprintf($sql, "AND mdl_quiz_attempts.userid = ".$userid);
+		$result = $this->conn->query($sql);
+		$records = Array();
+		while($row = $result->fetch_assoc()) {
+			$userid = $row['userid'];
+			$bookid = $row['bookid'];
+			$record = Array();
+			$record['userid'] = $userid;
+			$record['bookid'] = $bookid;
+			array_push($records, $record);
+		}
+		return $records;
+	}
+
+	// query rec subjects historical read books
+	public function getRecReadRecords($userid = null){
+		$sql = "SELECT userid, bookid FROM rec_read_records %s ORDER BY userid;";
+		if ($userid == null) $sql = vsprintf($sql, '');
+		else $sql = vsprintf($sql, "WHERE userid = ".$userid);
 		$result = $this->conn->query($sql);
 		$records = Array();
 		while($row = $result->fetch_assoc()) {
@@ -172,6 +223,24 @@ class DataManager {
 			array_push($recom_books, $recom_book);
 		}
 		return $recom_books;
+	}
+
+	public function checkInRecUsers($userid){
+		$sql = "SELECT COUNT(*) AS count FROM rec_users 
+				WHERE userid = ".$userid.";";
+		$result = $this->conn->query($sql);
+		$row = $result->fetch_assoc();
+		if ($row['count'] == 1) return true;
+		else return false;
+	}
+
+	public function checkInRecReadRecords($userid, $bookid){
+		$sql = "SELECT COUNT(*) AS count FROM rec_read_records
+				WHERE userid =".$userid." AND bookid=".$bookid.";";
+		$result = $this->conn->query($sql);
+		$row = $result->fetch_assoc();
+		if ($row['count'] > 0) return true;
+		else return false;
 	}
 }
 
