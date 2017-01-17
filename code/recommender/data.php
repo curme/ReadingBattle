@@ -242,6 +242,16 @@ class DataManager {
 		if ($row['count'] > 0) return true;
 		else return false;
 	}
+	
+	public function clearRecReadRecords($userid){
+		$sql = "DELETE FROM rec_read_records WHERE userid = ".$userid.";";
+		$this->conn->query($sql);
+	}
+	
+	public function clearUserRecomBooks($userid){
+		$sql = "DELETE FROM user_recom_books WHERE userid = ".$userid.";";
+		$this->conn->query($sql);
+	}
 }
 
 ?>
